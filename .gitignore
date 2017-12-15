@@ -2,3 +2,4 @@
 output-*
 *.box
 *.ovf
+packer_cache/
