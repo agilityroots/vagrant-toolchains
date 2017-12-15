@@ -1,0 +1,67 @@
+{
+  "variables": {
+    "aws_access_key": "{{env `VAGRANT_AWS_ACCESS_KEY`}}",
+    "aws_secret_key": "{{env `VAGRANT_AWS_SECRET_KEY`}}",
+    "ovf_source_path": "{{env `HOMEDRIVE`}}\\{{env `HOMEPATH`}}\\.vagrant.d\\boxes\\kmm-VAGRANTSLASH-ubuntu-xenial64\\1.0.1\\virtualbox\\box.ovf",
+    "image_name": "packer-ubuntu1604-base-{{isotime \"2006-01-02-15-04-05\"}}"
+  },
+
+  "builders": [
+    {
+      "type": "virtualbox-ovf",
+      "headless": true,
+      "vm_name": "{{user `image_name`}}",
+      "ssh_username": "vagrant",
+      "ssh_password": "vagrant",
+      "source_path": "{{user `ovf_source_path`}}",
+      "shutdown_command": "sudo -S shutdown -P now",
+      "vboxmanage": [
+        [ "modifyvm", "{{ .Name }}", "--cpus", "2" ],
+        [ "modifyvm", "{{ .Name }}", "--memory", "2048" ],
+        [ "modifyvm", "{{ .Name }}", "--natdnshostresolver1", "on" ],
+        [ "modifyvm", "{{ .Name }}", "--natdnsproxy1", "on" ]
+      ]
+    },
+    {
+      "type": "amazon-ebs",
+      "access_key": "{{user `aws_access_key`}}",
+      "secret_key": "{{user `aws_secret_key`}}",
+      "region": "{{user `aws_region`}}",
+      "source_ami_filter": {
+        "filters": {
+          "image-id": "{{user `aws_base_ami`}}"
+        },
+        "most_recent": true
+      },
+      "instance_type": "m3.medium",
+      "ssh_username": "ubuntu",
+      "ami_name": "{{user `image_name`}}",
+      "ami_regions": "{{user `aws_dest_regions`}}"
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "file",
+      "source": "{{user `script_path`}}/",
+      "destination": "/tmp/"
+    },
+    {
+      "type": "shell",
+      "inline": [
+        "chmod 777 /tmp/{{user `puppet_install_script`}}",
+        "chmod 777 /tmp/{{user `puppet_module_script`}}",
+        "chmod 777 /tmp/{{user `upgrade_script`}}",
+        "bash /tmp/{{user `upgrade_script`}}",
+        "bash /tmp/{{user `puppet_install_script`}}",
+        "bash /tmp/{{user `puppet_module_script`}} {{user `puppet_modules`}}"
+      ]
+    }
+  ],
+  "post-processors": [
+    {
+      "type": "vagrant",
+      "output": "{{user `image_name`}}_{{.Provider}}.box"
+    }
+  ]
+
+}

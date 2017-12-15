@@ -1,0 +1,10 @@
+{
+    "aws_region": "us-east-1",
+    "aws_dest_regions": "us-east-1,us-west-1",
+    "aws_base_ami": "ami-aa2ea6d0",
+    "script_path": "../scripts",
+    "upgrade_script": "disable-unattended-upgrades.sh",
+    "puppet_install_script": "install-puppet.sh",
+    "puppet_module_script": "install-puppet-modules.sh",
+    "puppet_modules": "puppetlabs-stdlib puppetlabs-apt puppetlabs-java elastic-elasticsearch elastic-kibana"
+}
