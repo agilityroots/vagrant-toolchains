@@ -1,27 +1,60 @@
-load File.expand_path('../Vagrantfile.setup', __FILE__)
+vars = JSON.parse(File.read(File.expand_path "./vars.json"))
+
+for p in ["vagrant-aws","vagrant-serverspec"] do
+  unless Vagrant.has_plugin?("#{p}")
+    raise "#{p} plugin required! Please run 'vagrant plugin install #{p}'"
+  end
+end
 
 Vagrant.configure(2) do |config|
-  config.vm.box = $box
-  config.vm.box_url = $box_url
-  # setup each machine.
-  ec2_instance = "jenkins-nexus-tomcat-docker"
-  config.vm.define ec2_instance do |config2|
+  config.vm.box = vars['aws']['box']
+  config.vm.box_url = vars['aws']['box_url']
+  config.vm.define vars['machine_name'] do |config2|
 
-      # custom config block for AWS provider.
-    config2.vm.provider :aws do |ec2, override|
-        ec2.keypair_name = $keypair_name
-        ec2.access_key_id = $access_key_id
-        ec2.secret_access_key = $secret_access_key
-        ec2.security_groups = $security_groups
-        override.ssh.private_key_path = $private_key_path
-        ec2.region = $ec2_region
-        ec2.availability_zone = $ec2_zone
-        ec2.ami = $ec2_ami
-        ec2.instance_type = $ec2_instance
-        override.ssh.username = $ec2_username
-        ec2.tags = {
-          'Name'         => "#{ec2_instance}"
+    # custom config block for AWS provider.
+    config2.vm.provider :aws do |aws, override|
+        aws.keypair_name = ENV['VAGRANT_AWS_KEYPAIR_NAME']
+        aws.access_key_id = ENV['VAGRANT_AWS_ACCESS_KEY']
+        aws.secret_access_key = ENV['VAGRANT_AWS_SECRET_KEY']
+        aws.security_groups = ENV['VAGRANT_AWS_SECURITY_GROUP']
+        override.ssh.private_key_path = ENV['VAGRANT_AWS_KEYPATH']
+        aws.region = vars['aws']['aws_region']
+        aws.availability_zone = vars['aws']['aws_zone']
+        aws.ami = vars['aws']['aws_ami']
+        aws.instance_type = vars['machine_name']
+        override.ssh.username = vars['aws']['aws_username']
+        aws.tags = {
+          'Name'         => "#{vars['machine_name']}"
         }
     end
+
+    config2.vm.provider :virtualbox do |vb,override|
+      vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+      vb.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
+      vb.customize ["modifyvm", :id,"--memory", vars['vb']['memory']]
+      vb.name = vars['machine_name']
+      override.vm.box = vars['vb']['box']
+      override.vm.box_url = vars['vb']['box_url']
+      config.vm.network "forwarded_port", guest: 9095, host: 9095
+    	override.ssh.username = 'vagrant'
+    	override.ssh.password = 'vagrant'
+    	override.ssh.insert_key = true
+    end
+
+      # provision with puppet
+  config.vm.provision :puppet do |puppet|
+    puppet.environment = "production"
+    puppet.environment_path = "puppet/environments/"
+    #puppet.options = "--verbose --debug"
+  end
+
+  # validate vagrant box against spec
+  config.vm.provision "test", type: "serverspec" do |spec|
+    # specs are stored here
+    spec.pattern = 'spec/*_spec.rb'
+    # save result into html report 'rspec_html_reports' directory
+    spec.html_output = true
+  end
+
   end
 end

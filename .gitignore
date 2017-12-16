@@ -3,3 +3,4 @@ output-*
 *.box
 *.ovf
 packer_cache/
+rspec_html_reports/
