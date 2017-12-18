@@ -7,6 +7,9 @@ class docker {
   group { 'docker':
     ensure => 'present'
   }
+  group { 'vagrant':
+    ensure => 'present'
+  }
 
   # declare vagrant user as a virtual resource
   # http://serverfault.com/a/416284/135880
@@ -39,12 +42,6 @@ class docker {
     require => Exec['apt_update']
   } ~>
   package { 'ca-certificates':
-    ensure => 'latest'
-  } ~>
-  package {"linux-image-extra-$kernelrelease":
-    ensure => 'latest'
-  } ~>
-  package {'linux-image-extra-virtual':
     ensure => 'latest'
   } ~>  # install docker
   package {"docker-engine":

@@ -9,7 +9,7 @@
   "aws_region": "us-east-1",
   "aws_dest_regions": "us-east-1,us-west-1",
   "aws_zone": "us-east-1a",
-  "aws_base_ami": "",
+  "aws_base_ami": "ami-ec7b0a96",
   "aws_instance": "t2.medium",
   "aws_username": "ubuntu"
 }
