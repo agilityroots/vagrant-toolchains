@@ -7,8 +7,8 @@ for p in ["vagrant-aws","vagrant-serverspec"] do
 end
 
 Vagrant.configure(2) do |config|
-  config.vm.box = vars['aws']['box']
-  config.vm.box_url = vars['aws']['box_url']
+  config.vm.box = vars['aws_box']
+  config.vm.box_url = vars['aws_box_url']
   config.vm.define vars['machine_name'] do |config2|
 
     # custom config block for AWS provider.
@@ -18,11 +18,11 @@ Vagrant.configure(2) do |config|
         aws.secret_access_key = ENV['VAGRANT_AWS_SECRET_KEY']
         aws.security_groups = ENV['VAGRANT_AWS_SECURITY_GROUP']
         override.ssh.private_key_path = ENV['VAGRANT_AWS_KEYPATH']
-        aws.region = vars['aws']['aws_region']
-        aws.availability_zone = vars['aws']['aws_zone']
-        aws.ami = vars['aws']['aws_ami']
+        aws.region = vars['aws_region']
+        aws.availability_zone = vars['aws_zone']
+        aws.ami = vars['aws_base_ami']
         aws.instance_type = vars['machine_name']
-        override.ssh.username = vars['aws']['aws_username']
+        override.ssh.username = vars['aws_username']
         aws.tags = {
           'Name'         => "#{vars['machine_name']}"
         }
@@ -31,10 +31,10 @@ Vagrant.configure(2) do |config|
     config2.vm.provider :virtualbox do |vb,override|
       vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
       vb.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
-      vb.customize ["modifyvm", :id,"--memory", vars['vb']['memory']]
+      vb.customize ["modifyvm", :id,"--memory", vars['vb_memory']]
       vb.name = vars['machine_name']
-      override.vm.box = vars['vb']['box']
-      override.vm.box_url = vars['vb']['box_url']
+      override.vm.box = vars['vb_box']
+      override.vm.box_url = vars['vb_box_url']
       config.vm.network "forwarded_port", guest: 9095, host: 9095
     	override.ssh.username = 'vagrant'
     	override.ssh.password = 'vagrant'

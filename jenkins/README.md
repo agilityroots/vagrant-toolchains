@@ -32,3 +32,13 @@ This includes:
 ### Nexus Server
 
 The Nexus server also runs as a Docker container, based on the latest Nexus image.
+
+## How to build
+
+### Using Packer
+
+```
+$ packer build \
+  -only=virtualbox-ovf \
+  -var-file=vars.json \
+  packer-jenkins.json
