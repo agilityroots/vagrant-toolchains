@@ -1,0 +1,10 @@
+Vagrant.configure(2) do |config|
+  jenkins_port=9095
+  puts "-----------------------------"
+  puts "Jenkins Port: #{jenkins_port}"
+  puts "-----------------------------"
+  config.vm.define 'jenkins-vb'
+  config.vm.network "forwarded_port", host: jenkins_port, guest: jenkins_port
+  config.vm.box = " packer-jenkins-2017-12-18_virtualbox.box"
+  config.vm.box_url = "https://github.com/agilityroots/vagrant-toolchains/releases/download/2017-12-18-jenkins/packer-jenkins-2017-12-18_virtualbox.box"
+end

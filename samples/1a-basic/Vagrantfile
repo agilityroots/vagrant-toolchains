@@ -1,0 +1,4 @@
+Vagrant.configure(2) do |config|
+  config.vm.box = "packer-ubuntu1604-base-2017-12-15-10-10-26_virtualbox.box"
+  config.vm.box_url = "https://github.com/agilityroots/vagrant-toolchains/releases/download/2017-12-15-ubuntu1604-base/packer-ubuntu1604-base-2017-12-15-10-10-26_virtualbox.box"
+end
