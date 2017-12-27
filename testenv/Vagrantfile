@@ -1,0 +1,62 @@
+vars = JSON.parse(File.read(File.expand_path "./vars.json"))
+
+for p in ["vagrant-aws","vagrant-serverspec"] do
+  unless Vagrant.has_plugin?("#{p}")
+    raise "#{p} plugin required! Please run 'vagrant plugin install #{p}'"
+  end
+end
+
+Vagrant.configure(2) do |config|
+  config.vm.box = vars['aws_box']
+  config.vm.box_url = vars['aws_box_url']
+  config.vm.define vars['machine_name'] do |config2|
+
+
+    config2.vm.provider :virtualbox do |vb,override|
+      vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+      vb.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
+      vb.customize ["modifyvm", :id,"--memory", vars['vb_memory']]
+      vb.name = vars['machine_name']
+      override.vm.box = vars['vb_box']
+      override.vm.box_url = vars['vb_box_url']
+
+      #config.vm.network :forwarded_port, guest: 22, host: 2222, id: "ssh", disabled: true
+      vars['ports'].each do |port|
+        config.vm.network :forwarded_port, guest: port['guest'], host: port['host'], id: port['id']
+      end
+    	override.ssh.username = 'vagrant'
+      override.ssh.private_key_path = [
+        "./vagrant_ssh_key",
+        "#{ENV['HOMEDRIVE']}/#{ENV['HOMEPATH']}/.vagrant.d/insecure_private_key"
+      ]
+    	override.ssh.insert_key = false
+    end
+
+    # custom config block for AWS provider.
+    config2.vm.provider :aws do |aws, override|
+        aws.keypair_name = ENV['VAGRANT_AWS_KEYPAIR_NAME']
+        aws.access_key_id = ENV['VAGRANT_AWS_ACCESS_KEY']
+        aws.secret_access_key = ENV['VAGRANT_AWS_SECRET_KEY']
+        aws.security_groups = ENV['VAGRANT_AWS_SECURITY_GROUP']
+        override.ssh.private_key_path = ENV['VAGRANT_AWS_KEYPATH']
+        aws.region = vars['aws_region']
+        aws.availability_zone = vars['aws_zone']
+        aws.ami = vars['aws_base_ami']
+        aws.instance_type = vars['machine_name']
+        override.ssh.username = vars['aws_username']
+        aws.tags = {
+          'Name'         => "#{vars['machine_name']}"
+        }
+    end
+
+   # insert our own key into .ssh directory.
+   # http://stackoverflow.com/a/30075596/682912
+   config.vm.provision "file", source: "vagrant_ssh_key.pub", destination: "~/.ssh/authorized_keys"
+
+    # install python required for ansible testing.
+    config.vm.provision :shell do |s|
+      s.inline = "export DEBIAN_FRONTEND=noninteractive && sudo apt-get update -qqy && sudo apt-get install -qqy python"
+    end
+
+  end
+end
