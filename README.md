@@ -17,7 +17,7 @@ Vagrant makes it easy to create, provision and manage virtualized environments. 
 The following Vagrant boxes have been released:
 
 | Vagrant Box | Latest Release | Details |
-|-|-|
+|-|-|-|
 | `jenkins` | [`2017-12-18`](https://github.com/agilityroots/vagrant-toolchains/releases/tag/2017-12-18-jenkins)| Prepackaged Jenkins environment. |
 | `ubuntu1604-base` | [`2017-12-15`](https://github.com/agilityroots/vagrant-toolchains/releases/tag/2017-12-15-ubuntu1604-base) | Ubuntu-based environment designed for DevOps automation development.|
 
