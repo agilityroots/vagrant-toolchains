@@ -1,0 +1,42 @@
+vars = JSON.parse(File.read(File.expand_path "./vars.json"))
+Vagrant.configure("2") do |config|
+
+  for p in ["vagrant-aws","vagrant-serverspec"] do
+    unless Vagrant.has_plugin?("#{p}")
+      raise "#{p} plugin required! Please run 'vagrant plugin install #{p}'"
+    end
+  end
+
+  config.vm.network "private_network", ip: "84.84.87.95"
+  vars['ports'].each do |port|
+      config.vm.network "forwarded_port", guest: port['guest'], host: port['host'], id: port['id']
+  end
+  config.ssh.shell = "bash -c 'BASH_ENV=/etc/profile exec bash'"
+  config.vm.boot_timeout = 60
+
+  # set machine name in vagrant status
+  config.vm.define vars['machine_name'] do |config2|
+  end
+  config.vm.box = vars['vb_box']
+  config.vm.box_url = vars['vb_box_url']
+  config.vm.provider :virtualbox do |vb|
+    vb.name = vars['machine_name']
+    vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+    vb.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
+    vb.customize ["modifyvm", :id,"--memory", vars['vb_memory']]
+  end
+
+  config.vm.provision :shell do |s|
+    s.path = "../scripts/install-puppet-modules.sh"
+    s.args = ["puppetlabs-stdlib",
+              "puppetlabs-apt",
+              "puppetlabs-java",
+              "elastic-elasticsearch",
+              "elastic-kibana"]
+  end
+
+  config.vm.provision :puppet do |p|
+    p.environment_path = "provisioning/environments"
+    p.environment = "production"
+  end
+end

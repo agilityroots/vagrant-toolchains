@@ -1,0 +1,27 @@
+{
+  "machine_name": "elk",
+  "vb_box": "packer-ubuntu1604-base-2017-12-15-10-10-26_virtualbox.box",
+  "vb_box_ver": "0",
+  "vb_box_url": "https://github.com/agilityroots/vagrant-toolchains/releases/download/2017-12-15-ubuntu1604-base/packer-ubuntu1604-base-2017-12-15-10-10-26_virtualbox.box",
+  "vb_memory": "4096",
+  "aws_box": "packer-ubuntu1604-base-2017-12-15-10-10-26_aws.box",
+  "aws_box_url": "https://github.com/agilityroots/vagrant-toolchains/releases/download/2017-12-15-ubuntu1604-base/packer-ubuntu1604-base-2017-12-15-10-10-26_aws.box",
+  "aws_region": "us-east-1",
+  "aws_dest_regions": "us-east-1,us-west-1",
+  "aws_zone": "us-east-1a",
+  "aws_base_ami": "ami-ec7b0a96",
+  "aws_instance": "t2.medium",
+  "aws_username": "ubuntu",
+  "ports": [
+    {
+      "host": 9200,
+      "guest": 9200,
+      "id": "elasticsearch"
+    },
+    {
+      "host": 5601,
+      "guest": 5601,
+      "id": "kibana"
+    }
+  ]
+}
