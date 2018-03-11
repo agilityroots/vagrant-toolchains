@@ -1,78 +1,19 @@
-require 'json'
-json = JSON.parse(File.read(File.join(File.dirname(__FILE__), 'vars.json')))
-
 Vagrant.configure('2') do |config|
+    config.vm.box = 'azure'
+    config.vm.box_url = 'https://github.com/azure/vagrant-azure/raw/v2.0/dummy.box'
+    # use local ssh key to connect to remote vagrant box
+    config.ssh.private_key_path = '~/.ssh/id_rsa'
 
-
-    json['servers'].each do |server|
-        config.vm.define server['name'] do |srv|
-            srv.vm.box = json['az_box']
-            srv.vm.box_url = json['az_box_url']
-
-            srv.vm.provider :azure do |azure, override|
-                azure.tenant_id = ENV['AZURE_TENANT_ID']
-                azure.client_id = ENV['AZURE_CLIENT_ID']
-                azure.client_secret = ENV['AZURE_CLIENT_SECRET']
-                azure.subscription_id = ENV['AZURE_SUBSCRIPTION_ID']
-                azure.vm_name = server['name']
-                azure.vm_size = server['az_size']
-                azure.admin_username = server['az_user']
-                azure.vm_password = "Adm1nAgility"
-                azure.vm_image_urn = server['az_vm_image_urn']
-                azure.location = json['az_location']
-                azure.instance_ready_timeout = server['az_ready_timeout']
-
-                # azure networking
-                azure.tcp_endpoints = server['az_tcp_endpoints']
-                azure.resource_group_name = json['az_resource_group_name']
-                azure.nsg_name = json['az_nsg_name']
-                azure.dns_name = server['name']
-                azure.virtual_network_name = json['az_virtual_network_name']
-                azure.subnet_name = json['az_subnet_name']
-
-                # OS-specific stuff
-
-                if server['type'] == "linux"
-                    srv.vm.guest = "linux"
-                    # Linux server uses SSH
-                    srv.vm.communicator = :ssh
-                    # use local ssh key to connect to remote vagrant box
-                    override.ssh.private_key_path = '~/.ssh/id_rsa'
-                else
-                    # Windows server uses WinRM
-                    srv.vm.guest = "windows"
-                    srv.vm.communicator = :winrm
-                    # Use self-signed cert for secure WinRM
-                    azure.winrm_install_self_signed_cert = true
-                    override.winrm.transport = :ssl
-                    override.winrm.username = server['az_user']
-                    override.winrm.password = "Adm1nAgility"
-                    override.winrm.port = 5986
-                    override.winrm.ssl_peer_verification = false # must be false if using a self signed cert
-                    # try extra hard to connect to WinRM
-                    override.winrm.retry_limit = 5
-                    override.winrm.retry_delay = 15
-
-                    # disable folder sync for Windows
-                    config.vm.synced_folder ".", "/vagrant", disabled: true
-                end
-    
-            end
-        end
-        config.vm.provision :ansible do |ansible|
-            ansible.groups = {
-                "winnodes" => ["winnode01"],
-                "winnodes:vars" => {
-                    ansible_user: "azureuser",
-                    ansible_password: "Adm1nAgility",
-                    ansible_port: 5986,
-                    ansible_connection: "winrm",
-                    ansible_winrm_server_cert_validation: "ignore"    
-                }
-            }
-            ansible.playbook = "provisioning/ansible/playbook.yml"
-            ansible.host_key_checking = false
-            ansible.verbose = "vvvv"
-        end
+    config.vm.provider :azure do |azure, override|
+        azure.tenant_id = ENV['AZURE_TENANT_ID']
+        azure.client_id = ENV['AZURE_CLIENT_ID']
+        azure.client_secret = ENV['AZURE_CLIENT_SECRET']
+        azure.subscription_id = ENV['AZURE_SUBSCRIPTION_ID']
+        azure.vm_name = "csubuntu"
+        azure.vm_size = "Standard_DS1_v2"
+        azure.admin_username = "azureuser"
+        azure.vm_image_urn = 'canonical:ubuntuserver:16.04-LTS:latest'
+        azure.location = "westus"
     end
+
 end
