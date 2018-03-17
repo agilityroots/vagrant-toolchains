@@ -1,0 +1,18 @@
+{
+    "az_box": "dummy",
+    "az_box_url": "https://github.com/azure/vagrant-azure/raw/v2.0/dummy.box",
+    "az_location": "westus",
+    "az_resource_group_name": "agilityrootschefserver",
+    "az_nsg_name": "agilityrootschefserver", 
+    "az_virtual_network_name": "agilityrootschefserver",
+    "az_subnet_name": "agilityrootschefserver",
+    "server": {
+            "name": "winnode01",
+            "type": "windows",
+            "az_size": "Standard_DS1_v2",
+            "az_user": "azureuser",
+            "az_vm_image_urn": "MicrosoftWindowsServer:WindowsServer:2012-R2-Datacenter:latest",
+            "az_ready_timeout": 600,
+            "az_tcp_endpoints": ["5985","5986"]
+        }
+}
