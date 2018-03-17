@@ -1,0 +1,56 @@
+---
+- name: Ensure resource group exists
+  azure_rm_resourcegroup:
+    name: "{{rg_name}}"
+    location: "{{location}}"
+    tags:
+        env: "{{env}}"
+    state: present
+
+- name: Ensure virtual network created
+  azure_rm_virtualnetwork:
+    resource_group: "{{rg_name}}"
+    name: "{{vnet_name}}"
+    address_prefixes: "{{vnet}}"
+
+- name: Add subnet to virtual network
+  azure_rm_subnet:
+    resource_group: "{{rg_name}}"
+    name: "{{subnet_name}}"
+    address_prefix: "{{address_prefix}}"
+    virtual_network: "{{vnet_name}}"
+
+- name: Create public IP address
+  azure_rm_publicipaddress:
+    resource_group: "{{rg_name}}"
+    allocation_method: Static
+    name: "{{pubip_name}}"
+
+- name: Create Network Security Group that allows SSH
+  azure_rm_securitygroup:
+    resource_group: "{{rg_name}}"
+    name: "{{nsg_name}}"
+    rules: "{{nsg_rules}}"
+
+- name: Create virtual network interface card
+  azure_rm_networkinterface:
+    resource_group: "{{rg_name}}"
+    name: "{{nic_name}}"
+    virtual_network: "{{vnet_name}}"
+    subnet: "{{subnet_name}}"
+    public_ip_name: "{{pubip_name}}"
+    security_group: "{{nsg_name}}"
+
+- name: Create VM
+  azure_rm_virtualmachine:
+    resource_group: "{{rg_name}}"
+    name: "{{vm_name}}"
+    vm_size: "{{vm_size}}"
+    admin_username: "{{user_name}}"
+    ssh_password_enabled: false
+    ssh_public_keys: 
+      - path: "/home/{{user_name}}/.ssh/authorized_keys"
+        key_data: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC1OKbp4SK3QBjkOtYdxko2NpSAZJtsgDKOnCM5tC7bOzo5h2x6oMsGCiKl2XD7b4ZC4Gy00kQKtHG0RekZOjhvGZj2U3/yElyYN0tIC+ic20vvuEISMvzGz8JTHZhbt3U8GFWy2wwBhBRXT4mzdcTeibhKjmAGUvz1Ch7rcc+OjgXNLtP64dkRsCEVzhbgOoa2RmWELXIBpJmLkKTXBvAYt+inrKw5jLZPv4Dcn4eUxgHOKeALENMVynseNjtoQtaUpUQ+yo0mDRI9CKZ9atP3vUWmPrc6tjR2tMZBVmdcODGEHgwjhI4grxJL37RtFp4H6reau0pXIJc/6h0BxZ8sZNNZDr+bWXYqoyjPo5pn7ulu9ZIAtErHEWVtcwkw1OJxSFG8WdFZ3Z3hfaqgHuFxrMkvYwBF1ZAiSV2YTn1yi4ryeADX9P7FEp7347kL5Ahf7gwWLXuI1nppdIJaNqBwMqunxWhTm9VurjlFdB4USO90BUOMiAXLLfWkE/+wMVzkOUOqkwwkCwZaon8A62VTMSx7T3r+AypWDHn+Uf6cS6jIoGtinbxZZpZ/i0uX3qiTqbqsvYf8GxcK9q4YoYPrLYR7r7tsebckPRZzHLINH8IGGLgEc5LVng2d9Sjx1BXTxHxKqN2GAPXj6AaWFH6Uqf4Kbv+Vo7cFjq3aafHYAw== admin-vvishw@AZRSCDEV1-VV"
+    network_interfaces: "{{nic_name}}"
+    image: "{{vm_image}}"
+    tags: "{{vm_tags}}"

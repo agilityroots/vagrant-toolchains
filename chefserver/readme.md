@@ -21,6 +21,27 @@ This recipe demonstrates several things
 * Run this on a host machine with Linux and Ansible.
 * Also since you are working with windows, make sure you install `pywinrm` with `pip install pywinrm`.
 
+
+## Tips and Troubleshooting
+
+### Run `vagrant up` in no-parallel mode.
+
+(Known Issue: #15 )
+
+:exclamation: If you try to bring up this Vagrant toolchain in parallel on Azure, the provisioning may fail.
+
+This is because both machines may try to create the same resources, via simultaneous deployments to the same resource group. This could cause a race condition and a situation similar to:
+
+![image](https://user-images.githubusercontent.com/27913105/37551903-1a4604da-29d0-11e8-8f70-ae8c47717974.png)
+
+To fix this, run Vagrant up as follows:
+
+```
+vagrant up --no-parallel
+```
+
+[Reference on `--no-parallel`](https://www.vagrantup.com/docs/cli/up.html#no-parallel)
+
 ### Troubleshooting WinRM
 
 Ansible provisioning might fail with 

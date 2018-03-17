@@ -1,0 +1,15 @@
+---
+- name: list existing chef users
+  command: chef-server-ctl user-list
+  become: true
+  register: existing_users
+  changed_when: false
+
+- name: create user {{user_name}}
+  command: |
+    chef-server-ctl user-create {{user_name}} \
+      "{{user_details.firstname}}" "{{user_details.lastname}}" \
+      "{{user_details.email}}" "{{user_details.password}}" \
+      --filename "/opt/chef_files/{{user_name}}.pem"
+  become: true
+  when: "{{user_name}} not in existing_users"

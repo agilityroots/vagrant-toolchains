@@ -1,0 +1,12 @@
+---
+- name: Provision Chef Server
+  hosts: chefserver
+  vars_files:
+  - vars/chefserver.yml
+  roles:
+  - chefserver
+
+- name: Provision Windows Node
+  hosts: winnodes
+  roles:
+  - chefnodewindows

@@ -1,0 +1,9 @@
+---
+chefserver_download_link: "https://packages.chef.io/files/stable/chef-server/12.17.33/ubuntu/16.04/chef-server-core_12.17.33-1_amd64.deb"
+chefserver_staging_dir: "/opt/chef_files"
+users:
+  admin01:
+    firstname: "admin"
+    lastname: "changeme"
+    email: "admin@example.com"
+    password: "ChangeMe123/_"

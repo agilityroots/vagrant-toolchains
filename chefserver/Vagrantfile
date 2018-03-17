@@ -1,78 +1,106 @@
 require 'json'
+ENV['VAGRANT_NO_PARALLEL'] = 'yes'
 json = JSON.parse(File.read(File.join(File.dirname(__FILE__), 'vars.json')))
 
+server = json['server']
+nodes = json['nodes']
 Vagrant.configure('2') do |config|
 
+    # Node-Independent Azure Provider Configuration
+    config.vm.provider :azure do |azure, override|
+        override.vm.box = json['az_box']
+        override.vm.box_url = json['az_box_url']
+        azure.tenant_id = ENV['AZURE_TENANT_ID']
+        azure.client_id = ENV['AZURE_CLIENT_ID']
+        azure.client_secret = ENV['AZURE_CLIENT_SECRET']
+        azure.subscription_id = ENV['AZURE_SUBSCRIPTION_ID']
+        azure.location = json['az_location']
+        azure.resource_group_name = json['az_resource_group_name']
+        azure.admin_username = server['az_user']
+        azure.vm_password = ENV['AZURE_WIN_PASSWORD']
+        azure.nsg_name = json['az_nsg_name']
+        azure.virtual_network_name = json['az_virtual_network_name']
+        azure.subnet_name = json['az_subnet_name']
+        # vagrant destroy - wait for everything to be destroyed
+        azure.wait_for_destroy = true
+    end
 
-    json['servers'].each do |server|
-        config.vm.define server['name'] do |srv|
-            srv.vm.box = json['az_box']
-            srv.vm.box_url = json['az_box_url']
-
-            srv.vm.provider :azure do |azure, override|
-                azure.tenant_id = ENV['AZURE_TENANT_ID']
-                azure.client_id = ENV['AZURE_CLIENT_ID']
-                azure.client_secret = ENV['AZURE_CLIENT_SECRET']
-                azure.subscription_id = ENV['AZURE_SUBSCRIPTION_ID']
-                azure.vm_name = server['name']
-                azure.vm_size = server['az_size']
-                azure.admin_username = server['az_user']
-                azure.vm_password = "Adm1nAgility"
-                azure.vm_image_urn = server['az_vm_image_urn']
-                azure.location = json['az_location']
-                azure.instance_ready_timeout = server['az_ready_timeout']
-
-                # azure networking
-                azure.tcp_endpoints = server['az_tcp_endpoints']
-                azure.resource_group_name = json['az_resource_group_name']
-                azure.nsg_name = json['az_nsg_name']
-                azure.dns_name = server['name']
-                azure.virtual_network_name = json['az_virtual_network_name']
-                azure.subnet_name = json['az_subnet_name']
-
-                # OS-specific stuff
-
-                if server['type'] == "linux"
-                    srv.vm.guest = "linux"
-                    # Linux server uses SSH
-                    srv.vm.communicator = :ssh
-                    # use local ssh key to connect to remote vagrant box
-                    override.ssh.private_key_path = '~/.ssh/id_rsa'
-                else
-                    # Windows server uses WinRM
-                    srv.vm.guest = "windows"
-                    srv.vm.communicator = :winrm
-                    # Use self-signed cert for secure WinRM
-                    azure.winrm_install_self_signed_cert = true
-                    override.winrm.transport = :ssl
-                    override.winrm.username = server['az_user']
-                    override.winrm.password = "Adm1nAgility"
-                    override.winrm.port = 5986
-                    override.winrm.ssl_peer_verification = false # must be false if using a self signed cert
-                    # try extra hard to connect to WinRM
-                    override.winrm.retry_limit = 5
-                    override.winrm.retry_delay = 15
-
-                    # disable folder sync for Windows
-                    config.vm.synced_folder ".", "/vagrant", disabled: true
-                end
-    
-            end
-        end
-        config.vm.provision :ansible do |ansible|
-            ansible.groups = {
-                "winnodes" => ["winnode01"],
-                "winnodes:vars" => {
-                    ansible_user: "azureuser",
-                    ansible_password: "Adm1nAgility",
-                    ansible_port: 5986,
-                    ansible_connection: "winrm",
-                    ansible_winrm_server_cert_validation: "ignore"    
-                }
-            }
-            ansible.playbook = "provisioning/ansible/playbook.yml"
-            ansible.host_key_checking = false
-            ansible.verbose = "vvvv"
+    # Chef Server Creation
+    config.vm.define server['name'] do |chefserver|
+        chefserver.vm.guest = "linux"
+        chefserver.vm.communicator = :ssh
+        chefserver.vm.provider :azure do |azure, override|
+            azure.vm_name = server['name']
+            azure.vm_size = server['az_size']
+            override.ssh.private_key_path = '~/.ssh/id_rsa'
+            azure.vm_image_urn = server['az_vm_image_urn']
+            azure.instance_ready_timeout = server['az_ready_timeout']
+            azure.tcp_endpoints = server['az_tcp_endpoints']
+            azure.dns_name = server['name']
         end
     end
+
+    # Chef Node Creation
+    nodes.each do |node|
+        config.vm.define node['name'] do |chefnode|
+            chefnode.vm.guest = "windows"
+            chefnode.vm.communicator = :winrm
+
+            chefnode.vm.provider :azure do |azure, override|
+                azure.vm_name = node['name']
+                azure.vm_size = node['az_size']
+                azure.vm_image_urn = node['az_vm_image_urn']
+                azure.instance_ready_timeout = node['az_ready_timeout']
+                azure.tcp_endpoints = node['az_tcp_endpoints']
+                azure.dns_name = node['name']
+                azure.winrm_install_self_signed_cert = true
+
+                # WinRM Config
+                override.winrm.transport = :ssl
+                override.winrm.username = server['az_user']
+                override.winrm.password = ENV['AZURE_WIN_PASSWORD']
+                override.winrm.port = 5986
+                override.winrm.ssl_peer_verification = false # must be false if using a self signed cert
+                # try extra hard to connect to WinRM
+                override.winrm.retry_limit = 5
+                override.winrm.retry_delay = 15
+
+            end
+
+            # disable folder sync for Windows
+            config.vm.synced_folder ".", "/vagrant", disabled: true
+    
+            # Prepare windows node for Ansible provisioning
+            # http://docs.ansible.com/ansible/latest/intro_windows.html
+            chefnode.vm.provision :shell do |s|
+                s.path = "https://raw.githubusercontent.com/ansible/ansible/devel/examples/scripts/ConfigureRemotingForAnsible.ps1"
+                s.args = ["-CertValidityDays","365","-SkipNetworkProfileCheck"]
+                s.privileged = true
+            end
+        end
+    end
+
+    # Common Provisioner for all Nodes
+    config.vm.provision :ansible do |ansible|
+        ansible.groups = {
+            "chefserver" => ["agilityrootschefserver"],
+            "chefserver:vars" => {
+                ansible_ssh_user: "azureuser",
+                ansible_password: ENV['AZURE_WIN_PASSWORD'],
+                ansible_ssh_private_key_file: '~/.ssh/id_rsa'
+            },
+            "winnodes" => ["winnode01"],
+            "winnodes:vars" => {
+                ansible_user: "azureuser",
+                ansible_password: ENV['AZURE_WIN_PASSWORD'],
+                ansible_port: 5986,
+                ansible_connection: "winrm",
+                ansible_winrm_server_cert_validation: "ignore"    
+            }
+        }
+        ansible.playbook = "provisioning/ansible/playbook.yml"
+        ansible.host_key_checking = false
+        ansible.verbose = "vvvv"
+    end
+    
 end

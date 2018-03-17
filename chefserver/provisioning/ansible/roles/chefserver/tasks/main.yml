@@ -1,0 +1,21 @@
+---
+- name: Create chef server temporary directory
+  file: 
+    path: "{{chefserver_staging_dir}}"
+    state: directory
+    owner: "{{ansible_user}}"
+    mode: 0755
+  become: true
+
+- name: install chef server
+  apt:
+    deb: "{{chefserver_download_link}}"
+  become: true
+
+- name: reconfigure chef server
+  command: chef-server-ctl reconfigure
+  become: true
+
+- name: create chef users
+  include_tasks: users.yml user_name={{item.key}} user_details={{item}}
+  with_dict: "{{users}}"

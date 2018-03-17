@@ -6,20 +6,18 @@
     "az_nsg_name": "agilityrootschefserver", 
     "az_virtual_network_name": "agilityrootschefserver",
     "az_subnet_name": "agilityrootschefserver",
-    "servers": [
-        {
-            "name": "agilityrootschefserver",
-            "type": "linux",
-            "az_size": "Standard_DS1_v2",
-            "az_user": "azureuser",
-            "az_vm_image_urn": "canonical:ubuntuserver:16.04-LTS:latest",
-            "az_ready_timeout": 300,
-            "az_tcp_endpoints": ["22","80"]
+    "server": {
+        "name": "agilityrootschefserver",
+        "az_size": "Standard_DS1_v2",
+        "az_user": "azureuser",
+        "az_vm_image_urn": "canonical:ubuntuserver:16.04-LTS:latest",
+        "az_ready_timeout": 300,
+        "az_tcp_endpoints": ["22","80"]
 
-        },
+    },
+    "nodes": [
         {
             "name": "winnode01",
-            "type": "windows",
             "az_size": "Standard_DS1_v2",
             "az_user": "azureuser",
             "az_vm_image_urn": "MicrosoftWindowsServer:WindowsServer:2012-R2-Datacenter:latest",
